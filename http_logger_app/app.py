@@ -70,12 +70,20 @@ def log_request():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    upload_directory = "files"
+
+    # Create directory if it doesn't exist
+    if not os.path.exists(upload_directory):
+        os.makedirs(upload_directory)
+
     if request.method == 'GET':
         return render_template_string(UPLOAD_FORM)
     elif request.method == 'POST':
         file = request.files.get('file')
         if file:
-            file_size = len(file.read())
+            file_path = os.path.join(upload_directory, file.filename)
+            file.save(file_path)
+            file_size = os.path.getsize(file_path)
             return render_template_string(UPLOAD_RESULT_TEMPLATE, filename=file.filename, file_size=file_size)
         return render_template_string("<p>No file uploaded. <a href='/upload'>Try again.</a></p>")
 
