@@ -1,1 +1,3 @@
 openresty
+.gitignore
+http_logger_app/files

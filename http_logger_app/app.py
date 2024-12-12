@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, send_from_directory
 
 app = Flask(__name__)
 
@@ -18,10 +18,43 @@ UPLOAD_FORM = """
 </head>
 <body>
     <h1>Upload a File</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput">
         <button type="submit">Upload</button>
     </form>
+    <progress id="progressBar" value="0" max="100" style="width: 100%;"></progress>
+    <p id="status">Waiting...</p>
+    <script>
+        const form = document.getElementById('uploadForm');
+        const progressBar = document.getElementById('progressBar');
+        const status = document.getElementById('status');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                    status.textContent = `Uploading: ${Math.round(percentComplete)}%`;
+                }
+            });
+
+            xhr.addEventListener('load', () => {
+                status.textContent = 'Upload complete!';
+                window.location.href = '/files';
+            });
+
+            xhr.addEventListener('error', () => {
+                status.textContent = 'Error occurred during upload.';
+            });
+
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        });
+    </script>
 </body>
 </html>
 """
@@ -39,9 +72,36 @@ UPLOAD_RESULT_TEMPLATE = """
     <p><strong>Filename:</strong> {{ filename }}</p>
     <p><strong>File Size:</strong> {{ file_size }} bytes</p>
     <a href="/upload">Upload Another File</a>
+    <a href="/files">View Uploaded Files</a>
 </body>
 </html>
 """
+
+FILES_LIST_TEMPLATE = """
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Files</title>
+</head>
+<body>
+    <h1>Uploaded Files</h1>
+    {% if files %}
+        <ul>
+        {% for file in files %}
+            <li><a href="/files/{{ file }}" download>{{ file }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No files found.</p>
+    {% endif %}
+    <a href="/upload">Upload a File</a>
+</body>
+</html>
+"""
+
+CACHE_DIRECTORY = "files"
 
 @app.route('/', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def log_request():
@@ -70,22 +130,40 @@ def log_request():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
-    upload_directory = "files"
-
-    # Create directory if it doesn't exist
-    if not os.path.exists(upload_directory):
-        os.makedirs(upload_directory)
+    # Create cache directory if it doesn't exist
+    if not os.path.exists(CACHE_DIRECTORY):
+        os.makedirs(CACHE_DIRECTORY)
 
     if request.method == 'GET':
         return render_template_string(UPLOAD_FORM)
     elif request.method == 'POST':
         file = request.files.get('file')
         if file:
-            file_path = os.path.join(upload_directory, file.filename)
+            # Save file to cache directory
+            file_path = os.path.join(CACHE_DIRECTORY, file.filename)
             file.save(file_path)
+
+            # Calculate file size
             file_size = os.path.getsize(file_path)
+
+            # Return result page
             return render_template_string(UPLOAD_RESULT_TEMPLATE, filename=file.filename, file_size=file_size)
+
         return render_template_string("<p>No file uploaded. <a href='/upload'>Try again.</a></p>")
+
+@app.route('/files', methods=['GET'])
+def list_files():
+    # List files in the cache directory
+    if os.path.exists(CACHE_DIRECTORY):
+        files = os.listdir(CACHE_DIRECTORY)
+    else:
+        files = []
+    return render_template_string(FILES_LIST_TEMPLATE, files=files)
+
+@app.route('/files/<filename>', methods=['GET'])
+def serve_file(filename):
+    # Serve files from cache directory
+    return send_from_directory(CACHE_DIRECTORY, filename)
 
 if __name__ == "__main__":
     # Host and port can also be configured via environment variables

@@ -15,6 +15,7 @@ services:
       SQUID_PROXY_HOST: "http://tundra.volutega.com:3128"  # Замените на ваш http-прокси
       TARGET_HOST: "http://target.example.com:5000"          # Замените на целевой сайт
       VIRTUAL_HOST: "tundra.volutega.com"               # Замените на имя виртуального хоста
+      MAX_BODY_SIZE: 150m
     volumes:
       #- ./nginx.conf:/etc/nginx/nginx.conf
       - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
