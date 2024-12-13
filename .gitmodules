@@ -1,0 +1,3 @@
+[submodule "docker-openresty"]
+	path = docker-openresty
+	url = https://github.com/openresty/docker-openresty.git
