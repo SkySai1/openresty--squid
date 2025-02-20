@@ -30,10 +30,10 @@ apt install -y build-essential libpcre3-dev libssl-dev zlib1g-dev curl git
 
 ---
 
-## **2. Сборка LuaJIT (оригинальной версии)**
+## **2. Сборка LuaJIT (openresty версия)**
 Скачаем исходники LuaJIT:
 ```bash
-git clone https://luajit.org/git/luajit-2.0.git
+git https://github.com/openresty/luajit2.git
 cd luajit-2.0
 make -j$(nproc)
 make install PREFIX=/usr/local
