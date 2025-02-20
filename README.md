@@ -46,6 +46,14 @@ luajit -v
 ---
 
 ## **3. Сборка OpenResty с модулем lua-resty-http**
+Установка необходимых библиотек:
+```bash
+install libpcre3 libpcre3-dev
+apt install libssl-dev openssl
+apt install zlib1g-dev
+```
+
+
 Скачаем исходники OpenResty:
 ```bash
 cd /root
